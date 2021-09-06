@@ -1,4 +1,4 @@
-# Dimitri Zaras - Gender matching glmm models - 11/19/20ddddddd
+# Dimitrios Zaras - Gender matching glmm models - 11/19/20ddddddd
 
 ## ----include = FALSE, results= 'hide'---------------------------------------------------------------------------------------------------
 library(tidyverse)
@@ -21,26 +21,11 @@ knitr::opts_chunk$set(echo = FALSE)
 # knitr::opts_chunk$set(cache = TRUE)
 
 
-## ----echo = TRUE, eval = FALSE----------------------------------------------------------------------------------------------------------
-## # R command
-## m1 = lmer(knowledge ~ age + (age | childID), data = df, REML = FALSE)
-
-
-## ----echo = TRUE, eval = FALSE----------------------------------------------------------------------------------------------------------
-## # R command
-## m2 = lmer(knowledge ~ age*language + age*hours + (age | childID), data = df, REML = FALSE)
-
-
 ## ---- message = FALSE-------------------------------------------------------------------------------------------------------------------
-#alc = read_csv(here("data", "SingerWillettalcohol1_pp.csv"))
-#dat <- read.csv("~/Dropbox/MLM-2020/data/dz_mlmdata.csv")
-dat <- read.csv("~/OneDrive - Emory University/critics_success/imdb_data_realSent.2_newspapers.csv")
-dat <- read.csv("~/OneDrive - Emory University/critics_success/newspaper_dat_w_rating.csv")
-# dat <- subset(dz_mlmdata_only_newspapers, rating2!="No Rating")
+
+dat <- read.csv("~/OneDrive - Emory University/critics_success/imdb_data_realSent.2_newspapers.csv") #import dataset with full data on newspaper film reviews and authors
 
 ## ---- echo = TRUE-----------------------------------------------------------------------------------------------------------------------
-model.b <- lmer(alcuse ~ age_14 + (age_14 | id) , data=alc, REML = FALSE)
-summary(model.b)
 
 model.b <- lmer(ave_sentiment ~ year2 + (year2|newspaper.name), data = dat, REML = T)
 
