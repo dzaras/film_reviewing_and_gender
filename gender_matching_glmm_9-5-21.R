@@ -1,6 +1,10 @@
-# Dimitrios Zaras - Gender matching glmm models - 11/19/20ddddddd
+# Dimitrios Zaras - Gender matching glmm models - 11/19/20
 
-## ----include = FALSE, results= 'hide'---------------------------------------------------------------------------------------------------
+# This script is an analysis of data on the relationship between professional film critics and the effect that gender has on film review assignment within a media organization
+# I employ generalized linear mixed-effects models because I use data (film reviews) that are nested within the newspapers that they were publisehd in and within the year they published in
+# I use two different dependent variables for the two different sections of the analysis: "real_sentiment" that is adummy variable measuring whether a film is favorable or not
+# "author.female" which measures whether the author (film critic) of a review is male or female
+
 library(tidyverse)
 library(here) # builds OS agnostic file paths
 library(lme4) # MLM package
@@ -16,47 +20,37 @@ library(haven) # import STATA data
 library(performance);library(see)
 library(ggeffects);library(sjPlot);library(sjmisc); library(interplot);library(effects);library(magrittr);library(lme4)
 setwd("C:/Users/dima/OneDrive - Emory University/critics_success")
-## ----setup, include=FALSE---------------------------------------------------------------------------------------------------------------
-knitr::opts_chunk$set(echo = FALSE)
-# knitr::opts_chunk$set(cache = TRUE)
 
-
-## ---- message = FALSE-------------------------------------------------------------------------------------------------------------------
-
+# the dataset I import in the next line contains data on film reviews published in 7 newspapers in the US in 3 points in time: 1998, 2008, 2018
 dat <- read.csv("~/OneDrive - Emory University/critics_success/imdb_data_realSent.2_newspapers.csv") #import dataset with full data on newspaper film reviews and authors
 
-## ---- echo = TRUE-----------------------------------------------------------------------------------------------------------------------
+# the level 2 variables are "newspaper.name", which contains the names of the seven newspapers from wihch I have collected data for this part of the project, 
+# and "year2", which has three levels - 1998, 2008, and 2018
+# I use a cross-nested design with data points, i.e. film reviews, being nested within both newspapers and years
+# The DV is "real_sentiment" and it is a variable that measures whether a review is favorable or not. 
+# The film reviews collected had either a quantitative rating (e.g. 3 out of 4 stars) or a qualitative rating (favorable, mized, unfavorable). 
+# The "real_sentiment" variable is a dummy variable with values of 1 for based on qualitative ('favorable') or quantitative rating (>0.67). 
+# The quantitative ratings included in the film reviews were normalized so that they have a range from 0 to 1. 
 
-model.b <- lmer(ave_sentiment ~ year2 + (year2|newspaper.name), data = dat, REML = T)
+# DV: favorability of film review
+# Level 1: film reviews , favorability of film review (favorable/unfavarable) Level 2: Newspaper  +  Year of publishing
+# The small number of groups at Level 2 (7 different newspaper titles and 3 years) is another reason for using a cross-nested design since with a cross-nested design 
+# the groups for each one of the two level 2 variables are multiplied. Thus, we end up with 21 groups at level 2. 
 
-model.c <- lmer(ave_sentiment ~ lead.actor.gender + ( 1 |newspaper.name) + (lead.actor.gender| year2), data = dat, REML = T)
+model.e <- glmer(real_sentiment ~ 1 +(1|newspaper.name) +(1|year2),data=dat, family = "binomial")
+summary(model.e)
 
-model.d <- lmer(ave_sentiment ~ lead.actor.gender + author.female + (1|newspaper.name) +(lead.actor.gender|year2),data=dat,REML=T)
-
-model.e <- lmer(ave_sentiment ~ lead.actor.gender*author.female + (author.female|newspaper.name) +(lead.actor.gender|year2),data=dat,REML=T)
-
-model.f <- lmer(ave_sentiment ~ lead.actor.gender*author.female + num.reviews.per.author + (1|newspaper.name) +(lead.actor.gender|year2),data=dat,REML=T)
-
-model.g <- lmer(ave_sentiment ~ lead.actor.gender + runtimeMinutes+ author.female + num.reviews.per.author +(1|newspaper.name)+(lead.actor.gender|year2),data=dat,REML=T)
-
-model.e <- glmer(ave_sentiment2 ~ lead.actor.gender +(1|newspaper.name) +(1|year2),data=dat, family = "binomial")
-
-model.h <- glmer(favorable ~ lead.actor.gender + female.director +(1|newspaper.name/year2),data=dat, family = "binomial")
-
-
-model.a <- glmer(real_sentiment2 ~ 1 + (1|newspaper.name), data=dat, family = "binomial")
+# adding more predictors to the original model
 
 summary(model.aa <- glmer(real_sentiment ~ lead.actor.gender
                   + female.director
-                  #+ second.actor.age
                   + lead.actor.age
                   + drama
-                  #+ comedy
-                  #+ action
                   + minutes
-                  #+ genre.number
                   + sum.art.critical.terms
                   + (1|newspaper.name) + (1|year2), data=dat, family="binomial"))
+
+# removing some of predictors and adding others due to lack of a significant relationship with the DV
 
 summary(model.ab <- glmer(real_sentiment ~ lead.actor.gender
                           + female.director
@@ -85,6 +79,9 @@ summary(model.ac <- glmer(real_sentiment ~ lead.actor.gender
                           + word.cat
                           + (1|newspaper.name) + (1|year2), data=dat, family="binomial"))
 
+# # aadding the "exp" variable that measures the experience of a film critics by taking into account the total number of reviews they have published 
+# # within the 3 years that have included in the study (1998, 2008, 2018)
+
 summary(model.ad <- glmer(real_sentiment ~ lead.actor.gender
                   + female.director
                   + lead.actor.age
@@ -94,89 +91,42 @@ summary(model.ad <- glmer(real_sentiment ~ lead.actor.gender
                   + exp#*lead.actor.gender
                   + minutes
                   + genre.number
-                  + (1|newspaper.name:year2), data=dat, family="binomial"))
+                  + (1|newspaper.name) + (1|year2), data=dat, family="binomial"))
 
 
-summary(model.i <- glmer(real_sentiment ~ lead.actor.gender*second.actor.gender
-                 + lead.actor.age 
-                 + author.female + #minutes 
-                 + drama + comedy + action 
-                 + exp2*author.female
-                 + (1|newspaper.name)# + (1|year2)
-                 ,data=dat, family = "binomial"))
 
 summary(model.i2 <- glmer(real_sentiment ~ lead.actor.gender*second.actor.gender
                          + lead.actor.age 
-                         + author.female #+  runtimeMinutes + word.count +
+                         + author.female +  runtimeMinutes + word.count +
                          + drama + comedy + action 
-                         + exp2
+                         + exp
                          + year2
                          + word.cat
-                         + (1|newspaper.name)# + (1|year2)
+                         + (1|newspaper.name) + (1|year2)
                          ,data=dat, family = "binomial"))
 
-summary(model.j <- glmer(real_sentiment ~ lead.actor.gender*second.actor.gender 
-                 + lead.actor.age 
-                 #+ female.director
-                 + author.female
-                 + drama + comedy + action
-                 + exp2
-                 + (1|newspaper.name) #+ (1|year2)
-                 ,data=dat, family = "binomial"))
 
-
-summary(model.jj <- glmer(real_sentiment ~ lead.actor.gender*female.director 
-                  + lead.actor.age 
-                  + author.female*exp2
-                  + drama + comedy  + action
-                  + elite.np*lead.actor.gender
-                  + (1|newspaper.name:year2),data=dat, family = "binomial"))
-
-model.jk <- glmer(real_sentiment ~ lead.actor.gender #+ author.female
+model.jk <- glmer(real_sentiment ~ lead.actor.gender
                   #+ lead.actor.age 
                   + drama + comedy + action #+ exp 
                   + lead.actor.gender #+ female.director
                   + (1|newspaper.name) + (1|year2),data=dat, family = "binomial")
 
-model.kl <- glmer(real_sentiment2 ~ lead.actor.gender + author.female + lead.actor.age + drama + comedy + action + exp 
-                  + lead.actor.gender + female.director
-                  + (1|media.name) + (1|film.id),data=dat, family = "binomial")
-
-model.ll <- glmer(real_sentiment ~ lead.actor.gender*year2 + female.director + author.female + drama + elite.np +
-                    + (1|newspaper.name:np.region:elite.np),data=dat, family = "binomial")
-
-model.mm <- glmer(real_sentiment ~ lead.actor.gender*female.director + lead.actor.gender*second.actor.gender + drama + comedy +
-                    exp + lead.actor.gender*author.female
-                  + (1|newspaper.name:year2) + (lead.actor.gender|year2),data=dat, family = "binomial")
-
-model.mm2 <- glmer(favorable ~ lead.actor.gender*female.director + lead.actor.gender*second.actor.gender*author.female +
-                     drama + comedy + action +
-                     exp*author.female + lead.actor.gender*author.female
-                   + (1|newspaper.name:year2) ,data=dat, family = "binomial")
+# in the following model I have included a random slope for the gender of the leading actor
+model.mm <- glmer(real_sentiment ~ lead.actor.gender*second.actor.gender + drama + comedy + lead.actor.age +
+                    exp 
+                  + (1|newspaper.name) + (lead.actor.gender|year2),data=dat, family = "binomial")
 
 
-model.mm <- glmer(real_sentiment ~ lead.actor.gender*female.director + lead.actor.gender*second.actor.gender + drama + comedy +
-                    elite.np + sum.art.critical.terms + gender.terms + year2
-                  + (1|media.name) + (1|film.id) + (female.director|author.id.x),data=dat, family = "binomial")
+model.llm <- glmer(real_sentiment ~ lead.actor.gender*second.actor.gender + drama + comedy + lead.actor.age + 
+                   exp 
+                   + (1|newspaper.name) + (1|year2),data=dat, family = "binomial")
 
-model.nn <- glmer(real_sentiment ~ lead.actor.gender*female.director + lead.actor.gender*second.actor.gender + drama + elite.np +
-                    + comedy + exp + lead.actor.gender*year2
-                  + (1|newspaper.name) ,data=dat, family = "binomial")
+# running an anova to compare between model.mm and model.llm to examine whether the inclusion of a random inctercept for the gender of the leading actor improves the mdoel
+anova(model.llm, model.mm)
 
-model.ln <- glmer(real_sentiment ~ lead.actor.gender + second.actor.gender + lead.actor.age + lead.actor.gender*author.female
-                  + comedy + action + drama + exp + art.terms + lead.actor.gender*author.female*exp
-                  + (1|newspaper.name:elite.np),data=dat, family = "binomial")
 
-tab_model(model.ln)
-
-model.llk <- glmer(real_sentiment ~ lead.actor.gender + second.actor.gender + drama + lead.actor.age + author.female
-                   + comedy + action + exp
-                   + (1|newspaper.name:elite.np) + (1|year2),data=dat, family = "binomial")
-
-model.llm <- glmer(real_sentiment ~ lead.actor.gender*second.actor.gender + drama + lead.actor.age + author.female
-                   + comedy + action + exp + lead.actor.gender*author.female*exp
-                   + (1|newspaper.name:elite.np) + (1|year2),data=dat, family = "binomial")
-
+# in the following chunk of code I assign the labels for the variables in the dataset so that the output of the tab_mdoel function is easier to udnerstand
 pl <- c(
   #`(Intercept)` = "Intercept",
   dat$lead.actor.gender = "Female Leading Actor",
@@ -214,9 +164,10 @@ tab <- tab_model(model.s2b,
                   show.ci=F, use.viewer = F,show.p = T,show.icc=T,show.se=T,show.stat=F,
                  dv.labels = c("Model 3"))
 
+# using the function tab_model for better presentation of the regression results as a HTML table
+tab_model(model.mm)
 
-anova(model.llm, model.ll)
-
+# use ggpredict to visualize the relationship between 
 ggpredict(model.ln, c("author.female","lead.actor.gender")) %>% plot()
 
 model.ll <- glmer(real_sentiment ~ lead.actor.gender + drama + lead.actor.age + lead.actor.gender*author.female
@@ -231,7 +182,7 @@ plot_model(model.ll, type = "pred", terms = c( "lead.actor.gender", "year2", "au
 
 interplot(m = model.ll, var1 = "author.female", var2 = "year2")
 
-#--- models with author.female as dv
+# models with author.female as dv
 summary(model.k <- glmer(author.female ~  (1|newspaper.name),data=dat, family = "binomial"))
 
 model.l <- glmer(author.female ~ lead.actor.gender*female.director + (1|newspaper.name:year2),data=dat, family = "binomial")
@@ -633,7 +584,5 @@ print(VarCorr(m2),comp=c("Variance","Std.Dev."),digits=3)
 dotplot(m2.re, main = FALSE)
 
 
-## ---------------------------------------------------------------------------------------------------------------------------------------
-knitr::knit_exit()
 
 
